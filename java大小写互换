@@ -1,0 +1,57 @@
+import java.io..*
+ 
+public class convertToPrintString
+ {   
+       public static void main(String[] args) throws IOException
+       {
+            InputStreamReader reader = new InputStreamReader(System.in); 
+            BufferedReader input = new BufferedReader(reader); 
+            System.out.print("Please enter your word:"); 
+            String text =  input.readLine(); 
+            String s = convertString(text); 
+            System.out.println(s);
+        }
+        //第一种方法
+       public static String convertString(String src)
+       {
+            char[] array = src.toCharArray();
+             int temp = 0;
+             for (int i = 0; i < array.length; i++)
+             {
+                 temp = (int) array[i];
+                 if (temp <= 90 && temp >= 65)
+                 { // array[i]为大写字母
+                     array[i] = (char) (temp + 32);
+                 } else if (temp <= 122 && temp >= 97)
+                           { // array[i]为小写字母
+                                array[i] = (char) (temp - 32);
+                 }
+              }
+              return String.valueOf(array);
+          }
+          publiuc sattic String convertString(String src)
+         {
+            char[] array = src.tonCharArray();
+              int temp = 0;
+              
+            }        
+          //第二种方法
+           public static String convertString(String str)
+           {
+               String upStr = str.toUpperCase(); 
+               String lowStr = str.toLowerCase(); 
+               StringBuffer buf = new StringBuffer(str.length()); 
+               for(int i=0;i
+               { 
+                  if(str.charAt(i)==upStr.charAt(i))
+                  { 
+                      buf.append(lowStr.charAt(i)); 
+                  }
+                 else
+                 {
+                     buf.append(upStr.charAt(i)); 
+                  } 
+                } 
+                return   buf.toString(); 
+             }
+ ｝
