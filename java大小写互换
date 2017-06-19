@@ -1,4 +1,5 @@
-import java.io..*
+import java.io..*把输入的字符串接收转成一个字符串数组 用一个for循环遍历   for循环里面 用一个if判断  ascii码等于小写a的 转成 大写的  下面在用个字符变量 把每次的值拼接起来  最后输出
+
  
 public class convertToPrintString
  {   
