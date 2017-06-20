@@ -1,0 +1,215 @@
+嵌入式及内核驱动部分阶段考试 
+
+姓名	孙洋洋
+
+时间	2017-5-13
+学号	14540730518
+
+
+简答题
+========================
+
+1. 如何将uboot.bin和Superboot.bin烧写到SD卡中？请分别列出对应的命令
+   (1)Superboot.bin烧写到sd卡命令	
+	1.把sd卡插入pc
+	2.卸载sd卡umount /media/*
+	3.查看sd卡信息 
+		ls -l /dev/sd/*
+	查看分区
+		fdisk -l /dev/sdb
+	4.删除sd卡的所有分区
+	5.新建分区
+	6.格式化分区
+	7.dd if=Superboot44127bin of=dev/sdb seek=1
+   (2)uboot烧写到sd卡中
+	1.umount /media/xxx/
+	2.cd uboot_tiny4412_0929/sd_fuse/
+	3.make
+	4.cd uboot_tiny4412_0929/sd_fuse/tiny4412/
+	5.chmod 755 sd_fusing.sh
+	6../sd_fusing.sh /dev/sdb
+2. CortexA9处理器一共支持几种处理器模式？如果在CortexA9上运行linux，会用到其中的哪几种模式？
+	CortexA9一共支持7种模式在ARM11以后增加了8种模式，这7种分别为
+	 (1)Usr用户模式(非特权)
+     (2)FIQ快速中断模式
+     (3)IRQ中断模式
+     (4)SVC管理模式(Supervisor)
+     (5)SYS系统模式
+     (6)Abt中止模式(Abort数据异常)
+     (7)Und未定义模式(Undefined指令异常)
+      对于linux来说，只用到了上面的usr,irq,svc,abt,und等5个状态
+3.用汇编语言实现函数mytest，函数要求实现乘法功能，将传入的参数1和参数2相乘，返回值为两个参数的乘积(可以查ARM手册了解乘法指令的用法，也可以用加法指令实现)；
+	mytest:
+		mul r1,r2,r3
+		mov pc,lr
+
+4. 假设某32位寄存器的物理地址为0x8000，将该寄存器的bit[20:16]设置为0x17，其它位不受影响；请用C语言实现上述要求(CPU未使能MMU)
+	int value;
+	value = readl(0x8000);
+	value &= ~(0x1F<<16);
+	value |= (0x17<<16);
+	writel(value, 0x8000);
+	
+5.linux内核的官方网站是哪个？请参考内核源代码，说出内核负责完成的主要工作(至少4项)
+	www.kernel.org
+	内核功能: 进程管理 内存管理 文件系统 内核驱动 网络协议
+
+6. 4412内核的编译包括如下步骤:
+(1)cp tiny4412_android_defconfig  .config
+(2)make menuconfig 
+(3)make 
+请说明每个步骤的目的是什么
+	(1) 使用厂商的默认配置
+	(2) 对内核进行配置通过图形界面，决定编译的内核都包含那些部分
+		最终的配置结果，存储在.config文件中
+	(3)对内核进行编译生成zImage内核和.ko模块 
+
+7. 将文件mod_test.c编译为可以在4412开发板上运行的模块，应该如何写Makefile？如何通过adb工具将该模块安装到开发板的/system/lib/modules目录下？
+	(1)
+	all:
+			arm-linux-gcc -static -o $(myself) $(mycfile)
+	install:
+			adb push $(myko) /system/lib/modules/
+		
+     insmod /systom/lib/modules/mod_test.ko
+
+8. 在linux-3.5内核源代码中，和arm处理器相关的代码在哪个目录下？该目录中，哪个目录的代码是和我们使用的4412处理器相关的？文件mach-tiny4412.c完成的主要工作是什么？
+	rm处理器相关目录：linux-3.5/arch/arm
+	4412处理器相关的目录：linux-3.5/arch/arm/mach-exynos
+
+9. 如果在引脚GPL0_0上连接一个LED灯，请在引脚上输出低电平以点亮该灯。请用两种方式实现该要求。(1)找到GPL0_0对应的寄存器进行设置 (2)使用内核提供的gpio库函数
+(1)GPL0_0对应的寄存器
+#define GPL0_BASE	0x11000000
+#define GPL0_SIZE	0x1000
+#define GPL0CON		0x00C0
+#define GPL0DAT		0x00C4
+static void __iomem *vir_base;
+	int value;
+	//1.映射虚拟地址
+	vir_base = ioremap(GPL0_BASE, GPL0_SIZE);
+
+	value readl(vir_base+GPL0CON);
+	value &= ~(0xF);
+	value |= 0x1
+	writel(value,
+			(vir_base+GPL0CON));
+
+	value readl(vir_base+GPL0DAT);
+	value &= ~(0xF);
+	writel(value,
+	vir_base+GPL0DAT))
+(2) gpio库函数
+	gpio_set_value来设置GPIO的输出
+#define gpio_num	EXYNOS4_GPL0(0)
+	int ret;
+	ret = gpio_request(gpio_num, "myio");
+if (ret)
+	printk("申请GPIO失败\n");
+	s3c_gpio_cfgpin(gpio_num, S3C_GPIO_OUTPUT);
+gpio_set_value(gpio_num, 0)
+
+
+10. 用定时器控制GPL0_0上连接的LED灯进行闪烁，闪烁要求LED亮1秒钟，灭2秒钟。请写出如何对定时器进行初始化、启动、删除等，并写出定时器的执行函数。
+#define gpio_num	
+static void led_timer_func(unsigned long data)
+{
+
+}
+static int __init my_init(void)
+{
+	int ret;
+	ret = gpio_request(gpio_num, "myio");
+	if (ret)
+		printk("申请GPIO失败\n");
+	s3c_gpio_cfgpin(gpio_num,
+			S3C_GPIO_OUTPUT);
+	gpio_set_value(gpio_num, 1);
+	setup_timer(&led_timer,
+			led_timer_func, NULL);
+	mod_timer(led_timers,
+			jiffies+1);
+}
+static void _exit my_exit(void)
+{
+	del_timer(&led_timer);
+	gpio_free(gpio_num);
+	}	
+11. 为某个设备编写驱动时，如果希望实现中断处理函数，要首先找到和该设备对应的中断号。对于exynos4412来说，记录中断号的头文件是哪个？如果一个设备的IRQ引脚和4412的GPX1_7引脚相连，应如何计算中断号？
+	<mach/irqs.h>
+	goio_to_irq(EXYNOS4_GPX1(7));
+
+
+12. 请简述linux中断处理的过程
+	查找中断向量表对应的中断号
+	linux中断的申请与释放
+		irq_desc结构体
+	释放IRQ
+		free_irq();
+	中断处理函数
+		irqaction
+	irq_handler_t
+		
+
+13. 请说明临界区的含义，并简述如何用mutex锁来保护临界区，包括锁的初始化，加锁/解锁等
+	（1）访问要保护的变量的代码段，称为临界区;
+	临界区中同一时间只能一个人进入;
+	临界区的代码可能分散在不同的函数中。如果要对临界区加锁，则必须保证在临界区的所有部分都加锁;
+	（2）声明mutex锁
+		struct mutex mylock;
+		初始化
+		mutex_init(&mylock);
+		加锁和解锁
+		mutex_lock(&mylock);
+		ret = mutex_lock_interruptible(&mylock);
+		if (ret)
+			return -ERESTARTSYS;
+		mutex_unlock(&mylock);
+
+14. linux内核中用于描述进程信息的结构体是哪个？在2.6.23以后，内核中采用的进程调度器是哪个？该调度器采用什么样的数据结构组织处于运行状态的进程？
+进程可以采用两种方式进入睡眠，可打断(interruptible)以及不可打断(uninterruptible)，可打断和不可打断分别指什么？
+			进程信息的结构体<linux/sched.h>中的task_struct
+			2.6.23内核以后，通过CFS调度器(Completely Fair Scheduler,
+			完全公平调度器)来调度运行队列中的进程用rb_tree组织在一起
+
+			可打断睡眠：ctrl+c发信号可结束睡眠进程
+			不可打断睡眠：ctrl+c发信号会被屏蔽
+
+
+15. 请使用linux内核提供的延迟函数和GPIO函数，实现如下要求：
+在GPK1_1引脚上，输出高电平，持续10ms；输出低电平，持续20us；输出高电平，持续30ns;
+#define gpio_num	EXYNOS4_GPK1(1)
+int ret;
+ret = gpio_request(gpio_num, "myio");
+if (ret)
+	printk("申请GPIO失败\n");
+	s3c_gpio_cfgpin(gpio_num, S3C_GPIO_OUTPUT);
+	gpio_set_value(gpio_num, 1);
+	mdelay(10);
+	gpio_set_value(gpio_num, 0);
+	udelay(20);
+	gpio_set_value(gpio_num, 1);
+	ndelay(30);
+	gpio_free(gpio_num);
+
+编程题
+======================
+请完成看门狗设备的完整char驱动
+
+
+
+附加题
+=======================
+1. 请确认你机器上鼠标对应的设备文件是哪个？
+input子系统的核心结构体为input_event，请说明其中三个成员type,code和value的含义
+	event4
+
+2. pc和4412开发板上的串口设备文件名分别是什么？
+假定4412开发板通过串口1连接了一个GPRS串口模块，通讯速率为57600Bps/8N1，需要向该模块发送字符串"at-connect"，请写出大致的实现步骤；
+	ttyS0~ttyS3
+	ttySAC0~ttySAC3
+3. pc和4412开发板上帧缓冲设备的文件名分别是什么？
+假定屏幕的当前分辨率为800*600，已经准备好一个32bpp，800*600像素的图片test.bin，如何将该图片在屏幕上显示？请写出大致的实现步骤；
+
+4. 如果在pc上插入一个usb摄像头，默认的设备文件名是什么？
+假定该摄像头支持修改亮度，范围0~200，将亮度设置为150，请写出大致的实现步骤；
+video0
