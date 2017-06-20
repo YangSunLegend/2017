@@ -1,0 +1,958 @@
+主题：	
+	1. /proc文件系统的作用(驱动调试)
+	2. 创建一个只读的proc文件(create_proc_entry)
+
+
+1.proc文件系统
+=======================
+由内核实现的文件系统。当用户态访问/proc下文件时，实际上是调用内核中和该文件对应的特定函数。
+一般用proc文件来实现内核/驱动的调试。
+
+大部分proc文件是只读的，用于获取内核信息;
+还有一些proc文件是可写的，当用户态改变了proc文件的内容时，会调用内核的函数，从而改变内核的对应行为。
+这些可写的文件，一般集中在/proc/sys下
+
+
+
+2.创建自己的proc文件
+==========================
+创建一个只读的proc文件
+创建文件：
+	create_proc_entry
+删除文件：
+	remove_proc_entry
+
+
+
+主题：	
+	1. char/block/网络驱动的简介
+	2. VFS的核心结构体(inode/file)
+	3. 基于缓冲区的char驱动例子
+
+
+1.char/block/网络驱动的简介
+==============================
+讨论linux世界中如何对设备进行分类;
+为什么用char/block/网络来分类设备？还有哪些分类方式
+
+三类驱动最主要的区别就是数据的交互模式：
+通过字节流，数据块和数据包交互
+
+在实际的工作中，我们接触的char设备是最多的
+
+
+
+2.vfs的核心结构体
+==========================
+在char驱动之上，是内核的VFS。也就是说，char驱动包含的函数由VFS调用。因此，在写char驱动之前，需要先了解vfs的一些核心结构体。
+
+vfs以及char驱动的核心结构体都定义在<linux/fs.h>
+vfs在调用char驱动函数之前，会准备好一些特定的结构体;
+
+(1)inode
+-------------------------
+记录文件的属主、访问时间等信息。当第一次打开文件的时候由VFS创建并初始化。当文件的所有引用都退出后，释放inode; 如果用户态有多个人同时打开一个文件，则VFS只需要分配一个inode.
+
+在linux中有7种类型的文件，打开时VFS都会创建对应的inode。但不同类型文件会初始化inode中不同的成员。如果用户态打开的是char类型的文件，则inode中和char驱动相关的成员为：
+i_rdev: 设备的设备号
+i_cdev: 指向设备对应的cdev结构体
+
+
+(2)file
+--------------------------
+对应用户态的open操作。如果多次打开同一个文件，内核会生成多个file
+file中记录文件的打开方式，文件内部指针等。
+当文件彻底关闭时，释放file
+
+
+(3)file_operations
+-------------------------
+file_operations包含若干函数指针，这些函数由驱动来实现，并集中到file_operations中，注册到VFS
+
+驱动一般要实现的函数有：
+open
+release
+read
+write
+unlocked_ioctl
+对应用户态的open/close/read/write/ioctl 
+
+驱动可能会实现的有：
+poll
+mmap
+fasync
+flush
+llseek
+(参考LDD3的对应章节)
+
+ioctl号最好让不同的部分代表不同的含义：
+bit[7:0] : number(次ioctl号)
+bit[15:8] : type(主ioctl号)
+bit[29:16] : parameter size
+bit[31:30] : parameter direction
+
+可以用特定的宏来形成ioctl号，类似于形成设备号的宏MKDEV():
+_IO();
+_IOW();
+_IOR();
+_IOWR();
+
+
+
+3. 基于缓冲区的char驱动例子
+=============================
+用缓冲区作为设备，写我们的第一个char驱动例子
+
+主题：	
+	1. linux下的设备访问
+	2. led的char驱动例子1/2
+	3. adc的char驱动例子
+	4. led的char驱动例子3(基于GPIO库)
+	5. 蜂鸣器char驱动例子(基于PWM库)
+
+作业：
+写ADC驱动(基于寄存器访问)
+在淘宝上根据自己的项目需求，选择对应的传感器或控制器；
+
+
+1.如何在linux驱动中访问设备
+==================================
+在之前的学习中，我们已经接触过如何在uboot中访问开发板的片内外设(寄存器在芯片内部，通过物理地址来访问)；
+下面，我们看看如何在Linux驱动中访问外设；
+
+由于linux使能了MMU，因此对于驱动来说，不能直接使用寄存器的物理地址，必须将其映射为虚拟地址才可以使用
+
+例子：
+#include <linux/ioport.h>
+#include <linux/io.h>
+
+//定义物理基地址以及寄存器的偏移
+//GPIO_SIZE为寄存器的范围，可以按照使用的寄存器的总大小进行计算，比如下面就用了两个寄存器，范围是0x8；
+但由于地址映射的最小单位是4K，因此小于4K的值都是可以的
+#define GPIO_BASE	0x11000000
+#define GPIO_SIZE	0x1000	//0x8
+#define GPM4CON		0x2E0
+#define GPM4DAT		0x2E4
+
+/* 将物理地址映射到虚拟地址
+ * 如果不成功，则无法访问寄存器 */
+static void __iomem *vir_base;
+vir_base = ioremap(GPIO_BASE, GPIO_SIZE);
+if (!vir_base) {
+	printk("Cannot ioremap\n");
+	return -EIO;
+}
+
+//访问寄存器，一般采用基地址加偏移的模式
+//内核根据寄存器的大小，提供了一系列函数
+//寄存器访问一般采用"读-修改-写"
+
+/* 8位寄存器byte */
+char value;
+value = readb(vir_base + offset);
+writeb(value, (vir_base+offset));
+
+/* 16位寄存器word */
+short value;
+value = readw(vir_base+offset);
+writew(value, (vir_base+offset));
+
+/* 32位寄存器 */
+int value;
+value = readl(vir_base+offset);
+writel(value, (vir_base+offset));
+
+/* 64位寄存器 */
+u64 value;
+value = readq(vir_base+offset);
+writeq(value, (vir_base+offset));
+
+//如果不再访问寄存器，应该取消映射
+iounmap(vir_base);
+
+
+
+2.led灯的char驱动例子1/2
+==========================
+根据LED设备的硬件情况，写LED的第一个char驱动例子；
+写完本例子后，大家可以针对ADC自己写驱动；
+
+
+3. adc的char驱动例子
+======================
+参考code-drv/04adc
+
+
+4.led灯的char驱动例子3
+==========================
+开发板上的很多外设都可以通过gpio连接，针对这一类型的设备，linux提供了一套通用的gpio库，使用库函数后，就可以不用直接访问设备的寄存器了：
+
+本例子中属于gpio库的API说明如下：
+应包含头文件：
+#include <linux/gpio.h> //所有处理器通用的
+#include <plat/gpio-cfg.h> //三星芯片共用的
+#include <mach/gpio.h> //针对4412的
+
+linux指向的目录是linux-3.5/include/linux/；
+plat指向的目录是linux-3.5/arch/arm/plat-samsung/include/plat/；
+mach指向的目录是linux-3.5/arch/arm/mach-exynos/include/mach/；
+
+//从<mach/gpio.h>中获得GPIO的编号
+如果使用android4.2(linux3.5)，则宏的名字为：
+int gpio_num = EXYNOS4X12_GPM4(1);
+
+如果使用android5.0(linux3.0.86)，则宏名为：
+int gpio_num = EXYNOS4212_GPM4(1);
+
+//向gpio库申请使用gpio
+//申请的gpio名字出现在/sys/kernel/debug/gpio文件中
+ret = gpio_request(gpio_num, "myio");
+if (ret)
+	printk("Request failed...\n");
+
+
+//对io进行配置
+s3c_gpio_cfgpin(gpio_num, S3C_GPIO_OUTPUT);
+还可以配置为S3C_GPIO_INPUT和S3C_GPIO_SFN(x)
+上述宏定义在<plat/gpio-cfg.h>
+
+//设置gpio输出0或1
+gpio_set_value(gpio_num, 0|1);
+
+//获得gpio输出的值(0或1)
+int ret = gpio_get_value(gpio_num);
+
+//释放gpio
+gpio_free(gpio_num);
+
+
+
+4. 蜂鸣器驱动
+=====================
+Pulse Width Modulation: 脉冲宽度调制
+栈空比(duty): 高电平持续时间/周期时间
+栈空比70%: 一个周期内高电平持续70%的时间，剩下30%为低电平
+
+开发板通过pwm接口连接了一个蜂鸣器，接下来我们可以通过驱动来控制该设备，可以控制蜂鸣器响/不响，改变音调等；
+
+linux提供了专用的pwm接口库，接口库中会访问对应的硬件定时器中的寄存器，控制IO上输出PWM信号的周期以及占空比；
+例子如下：
+#include <linux/pwm.h>
+
+//声明一个指向pwm_device结构体的指针
+//声明变量pwm_id，存储pwm通道号
+struct pwm_device *dev;
+//int pwm_id = 0;
+
+//申请pwm通道(根据4412手册，id从0到3)
+dev = pwm_request(pwm_id, "xxx");
+if (IS_ERR(dev)) {
+	printk("Cannot request pwm\n");
+	return PTR_ERR(dev);
+}
+
+//释放pwm通道
+pwm_free(dev);
+
+//配置pwm的占空比和周期，时间以ns为单位
+pwm_config(dev, 一个周期中高电平的ns数，整个周期的ns数)
+内核中不要用浮点数，假如占空比为47%，则计算高电平的ns数可以：
+1周期的ns数/100*47;
+
+如果频率为1000，则一个周期为1/1000秒；
+相当于1000000ns;
+对应蜂鸣器来说，改变频率会改变音调；改变占空比的效果不明显；
+可以设定周期为1s，此时改变栈空比的效果明显；
+
+//使能pwm
+pwm_enable(dev);
+
+//关闭pwm
+pwm_disable(dev);
+
+在用pwm库来控制GPIO之前，首先要将GPIO配置为PWM输出:
+	int gpio_num = EXYNOS4_GPD0(0);
+	gpio_request(...);
+	s3c_gpio_cfgpin(gpio_num, S3C_GPIO_SFN(2));
+
+一个pwm的常用领域是控制LCD的背光以及步进电机等
+
+
+编译前，需要修改文件arch/arm/mach-exynos/mach-tiny4412.c
+见3341行：
+#ifdef CONFIG_TINY4412_BUZZER
+	&s3c_device_timer[0],
+#endif
+将条件编译的语句去掉来使能定时器0，然后再重新编译内核。
+
+主题：	
+	1. 内核的时间
+	2. 延迟和定时
+	3. 基于忙循环的延迟(ndelay&udelay&mdelay)
+	4. 基于等待队列的延迟(睡眠)
+	5. 定时器(timer_list)
+
+
+1. 内核的时间
+========================
+(1)tick
+--------------------
+内核采用了一个新的时间单位来进行计时。
+该时间单位称为tick(滴答)，一个tick对应硬件定时器两次中断之间的时间间隔。
+当前内核每秒钟硬件定时器会发生HZ次中断。因此，tick和秒的换算关系为：
+	1 tick = 1/HZ秒
+HZ是在内核make menuconfig时确定，如果要修改HZ值，需要重新编译内核。
+看内核的.config文件，可知6410默认采用的HZ为100，4412采用的HZ为200，而x86用1000。HZ的范围一般从100到1000
+
+如果要延迟1秒钟，相当于延迟1*HZ个tick;
+0.43秒为HZ*43/100
+
+
+(2)相对时间
+------------------
+内核从开机开始记录一个相对时间。内核利用全局变量jiffies来记录从开机到当前时间所经过的tick的总量。
+jiffies++的工作是由硬件定时器的中断处理函数完成的。
+jiffies的类型是unsigned long，在32位平台上最大值为4G。因此，当HZ为1000时，大约49.7天会溢出一次。
+为了避免溢出，可以使用64位的变量jiffies_64(unsigned long long)
+
+内核里的很多延迟和定时，都是用jiffies进行判断的。
+如果要访问jiffies，应包含头文件<linux/sched.h>
+schedule 调度 
+Scheduler 调度器 
+
+(3)绝对时间
+--------------------
+1969 UNIX诞生
+从1970年1月1日0时0分0秒开始到现在的时间。
+在内核中用两个结构体来记录绝对时间：
+<linux/time.h>中的timeval和timespec。
+例子：
+#include <linux/time.h>
+struct timeval tval;
+struct timespec tspec;
+
+//调用内核的函数来获得绝对时间
+do_gettimeofday(&tval);
+getnstimeofday(&tspec);
+
+//打印绝对时间
+printk("%lds : %ldus\n", tval.tv_sec, tval.tv_usec);
+printk("%lds : %ldns\n", tspec.tv_sec, tspec.tv_nsec);
+
+实际上，jiffies在开机时从-300秒开始计数(如果HZ为1000，则从0xFFFB6C1F开始)
+0x1,0000,0000 
+
+
+2. 延迟和定时
+=======================
+延迟：当前程序停下来，等待某个条件满足。延迟是不得已的，如果程序可以运行，就不应该延迟
+
+定时：启动定时器，由内核(硬件定时器的中断处理函数)在未来的某个时间为启动定时器的人完成某项工作
+
+
+
+3. 基于忙循环的延迟
+=======================
+如果是比较短时间的延迟，则可以通过在cpu上运行一段循环来延迟，如果要延迟较长的时间，则需要将当前进程置入睡眠来延迟。
+
+for (i=0; i<10000; i++);
+
+例子：
+#include <linux/delay.h>
+	ndelay(10); //延迟10ns
+	udelay(20); //延迟20us
+	mdelay(30); //延迟30ms
+
+内核用for循环实现上述3个函数。其中udelay用的最多，一般用于寄存器间设置的间隔。
+延迟时间和for循环次数的转换是一个经验值。内核在开机或者cpu频率切换时，运行1个tick的循环；
+然后记录循环的次数。udelay等的时间就通过该次数进行转换。
+这个次数记录在/proc/cpuinfo文件的变量bogomips中
+
+忙循环的延迟函数两个常见用途：
+1. 在连续操作寄存器时增加延迟
+	writel(value1, vir_base+offset1);
+	udelay(20);
+	writel(value2, vir_base+offset2);
+
+2. 在用GPIO通讯时，模拟时序
+	gpio_set_value(gpionum, 1);
+	mdelay(10);
+	gpio_set_value(gpionum, 0);
+	mdelay(20);
+	gpio_set_value(gpionum, 1);
+	mdelay(10);
+
+
+
+4. 基于等待队列的延迟(睡眠)
+==============================
+(1)进程状态和运行队列
+---------------------
+进程的核心结构体为<linux/sched.h>中的task_struct
+区分进程的3个核心状态：
+TASK_RUNNING
+TASK_INTERRUPTIBLE
+TASK_UNINTERRUPTIBLE
+
+处于TASK_RUNNING状态的进程会组织在一个运行队列中，2.6.23内核以后，通过CFS调度器(Completely Fair Scheduler, 完全公平调度器)来调度
+运行队列中的进程用rb_tree组织在一起
+
+
+(2)等待队列
+----------------------
+等待队列定义在<linux/wait.h>
+每个要等待的条件都可以分配对应的等待队列
+每个队列有一个等待队列头(wait_queue_head_t)
+
+例子：
+#include <linux/wait.h>
+
+//声明等待队列头
+wait_queue_head_t mywait;
+
+//队列头使用前要初始化
+init_waitqueue_head(&mywait);
+
+//在char驱动的write函数中，如果缓冲区满则睡眠
+ssize_t my_write(...)
+{
+	if (dev->wp == dev->buf_size) {
+		//wait_event(mywait, dev->wp!=dev->buf_size);
+		ret = wait_event_interruptible(mywait, dev-wp!=dev->buf_size);
+		if (ret != 0)
+			return -ERESTARTSYS;
+	}
+	//如果缓冲区非满，则可写
+	...
+}
+
+//在ioctl函数中，可以让缓冲区复位，此时可以唤醒等待队列中的睡眠进程
+int my_ioctl(xxx)
+{
+	//如果复位缓冲区，则唤醒整个队列
+	memset(xxx);
+	dev->wp = 0;
+	//wake_up(&mywait);
+	wake_up_interruptible(&mywait);
+	...
+}
+
+
+
+5. 定时器(timer_list)
+=======================
+定时器的特征：
+(1)启动定时器的人和执行定时器的人不一样
+一般启动定时器的常常是某个进程或者中断，而内核中负责执行定时器的是硬件定时器的中断处理函数
+jiffies++;
+
+(2)定时器的执行时间一定是未来
+内核利用jiffies来确定定时器的执行时间
+
+(3)定时器对应的函数只执行一次
+一般谁准备定时器，谁提供执行函数；
+如果希望实现一个循环的定时器，则需要在执行函数中自行将定时器重新启动;
+
+(4)定时器的函数在中断上下文(context)执行
+因此，执行函数中不能睡眠(不能调用可能导致睡眠的函数)
+
+定时器的核心结构体定义在<linux/timer.h>，为timer_list。
+timer_list由启动者准备，当启动定时器后，timer_list会形成一个链表，由内核的硬件定时器中断来检查链表，看有没有定时器到时。
+
+例子：
+#include <linux/timer.h>
+
+//声明定时器
+struct timer_list mytimer;
+
+//定时器的执行函数
+//当定时器到期后，由硬件定时器中断执行一次
+static void 
+my_timer_func(unsigned long data)
+{
+	...//不可睡眠
+}
+
+//初始化定时器
+setup_timer(&mytimer, my_timer_func, data);
+初始化定时器时传入的参数为timer_list的指针；执行函数；传给执行函数的参数
+
+//启动定时器
+mod_timer(&mytimer, jiffies+HZ);
+定时器一旦启动，就会加入一个timer_list的链表，一旦到时，就会被执行。
+启动定时器的人和执行的人不是一个。即使启动者退出，定时器仍然执行。
+mod_timer(&mytimer, jiffies+HZ); 
+
+//删除定时器
+del_timer(&mytimer);
+如果模块要rmmod，在卸载之前，必须删除所有没执行的定时器。
+
+利用定时器实现LED灯按给定间隔闪烁；
+主题：	
+	1. 中断的硬件以及中断号(irqs.h)
+	2. linux的中断处理过程(irq_desc/irqaction)
+	3. 如何写和注册中断处理函数(request_irq/free_irq)
+	4. 按键的中断例子
+
+
+1.中断的硬件和中断号
+======================
+中断是硬件通过硬件电路产生的，因此，如果一个外设没有独立的中断线，也就不能产生中断;
+问题：usb鼠标能产生中断么？
+
+中断控制器的工作是收集硬件产生的中断，然后按照顺序依次提交给cpu核心：
+4412的中断控制器为GIC(Generic Interrupt Controller)
+
+中断的屏蔽(mask):
+临时将中断的传输通道堵住，不再向上传递中断；
+解除屏蔽后，之前阻塞的中断会继续发送；
+
+中断号:
+是一个软件概念，从0开始为硬件支持的每个中断分配一个编号；
+由具体的处理器厂商(三星)来分配，一般会写入特定的头文件；
+对于4412处理器，该头文件为arch/arm/mach-exynos/include/mach/irqs.h
+
+irqs.h和gpio.h在同一个目录下；
+
+如果代码要使用中断号，则包括<mach/irqs.h>即可，可以用两种不同的方法来查找中断号：
+
+(1)芯片内部的外设
+-----------------------
+首先明确设备的名字，然后利用名字匹配，自行在irqs.h中找到对应的中断号；
+比如看门狗设备对应的中断号为IRQ_WDT, rtc硬件对应的为IRQ_RTC_ALARM/IRQ_RTC_TIC
+
+(2)芯片外部连接的设备
+-----------------------
+由于设备的中断引脚都连接到4412的GPIO，因此可以利用GPIO号来找到中断号
+中断号 = gpio_to_irq(GPIO号)
+例子：
+#include <linux/gpio.h>
+#include <mach/gpio.h>
+
+//如按键0连接到4412的IO为GPX3_2
+//对应的gpio号为EXYNOS4_GPX3(2)
+int irq_num = gpio_to_irq(EXYNOS4_GPX3(2));
+
+每个CPU能够支持的中断号数量是固定的，定义在NR_IRQS宏中；
+该宏定义在<mach/irqs.h>中；
+
+上述查找IRQ号的方法适用于ARM处理器；
+X86处理器连接的外设多数采用PCI/PCI-E总线，找中断号的方法不同；
+
+
+
+2. linux的中断处理
+======================
+(1)处理过程
+----------------
+略
+
+(2)irq_desc
+----------------
+定义在<linux/irqdesc.h>
+irq_desc结构体用于记录中断信息；
+linux内核在启动时分配了一个irq_desc的数组，数组中共有NR_IRQS个成员；
+irq_desc由内核负责准备；
+
+(3)irqaction
+-----------------
+定义在<linux/interrupt.h>
+每个irqaction用于封装一个中断处理函数，结构体由驱动人员负责分配。
+irqaction中包含中断号，中断处理函数指针，中断的执行标志，中断名等
+
+(4)irq_handler_t
+定义在<linux/interrupt.h>
+如下：
+irqreturn_t (*irq_handler_t)(int, void *);
+中断处理函数，由驱动人员负责实现；
+
+irqreturn_t:
+只有两个值，IRQ_NONE/IRQ_HANDLED；
+如果中断不是由本设备引起的，则返回IRQ_NONE，否则返回IRQ_HANDLED。
+
+
+
+3. 如何写和注册中断处理函数
+=============================
+(1)中断处理函数的设计要求
+--------------------------
+驱动人员在设计中断处理函数时，要遵循的要求是：
+* 可嵌套不可重入
+
+* 不能睡眠(不能执行任何可能导致睡眠的操作)
+如：
+	kzalloc(size, GFP_KERNEL); //可能睡眠
+	kzalloc(size, GFP_ATOMIC); //不会睡眠
+	copy_to_user();
+
+* 负责清除中断状态位
+如果硬件有中断的状态寄存器，软件要负责清除中断的标志位；
+如果不清除标志位，设备无法再次产生中断；
+
+
+(2)中断处理函数的注册和注销
+--------------------------
+例子：
+#include <linux/interrupt.h>
+#include <mach/irqs.h> //片内外设
+#include <linux/gpio.h> //片外外设
+#include <mach/gpio.h>
+
+//确定中断号
+#define KEY_IRQ		gpio_to_irq(gpio号);
+
+//中断处理函数
+static irqreturn_t
+key_service(int irq, void *dev_id)
+{
+	//根据硬件及软件的相关要求完成工作
+	...
+	return IRQ_HANDLED或IRQ_NONE;
+}
+
+//注册中断处理函数
+u32 flags = IRQF_TRIGGER_FALLING;
+int ret;
+ret = request_irq(KEY_IRQ,  //中断号
+		key_service, //中断处理函数
+		flags,		//中断的标志
+		"mykey",	//中断处理函数的名字
+		dev_id);	//传递个中断处理函数的参数
+
+if (ret) {
+	printk("Cannot register interrupt handler\n");
+	return -1;
+}
+
+//注销中断处理函数
+free_irq(irq, dev_id);
+参数为中断号和dev_id。dev_id一定要和request_irq中的最后一个参数一致。
+
+
+(3)中断的屏蔽和打开
+--------------------------
+可以人为屏蔽(mask)/打开某个中断:
+disable_irq(int irq);
+enable_irq(int irq);
+上面的两个函数支持嵌套，也就是说，如果调用了3次disable_irq，需要enable_irq3次，才能真正使能中断
+要确保先调用disable_irq，再调用enable_irq;
+
+如果要屏蔽整个cpu的中断，可以用：
+local_irq_disable();
+local_irq_enable();
+实际上是将CPSR寄存器的I位置1或清0
+
+
+
+4. 按键的中断例子
+=====================
+利用开发板上的按键，实现一个中断的例子；
+参考底板电路图P8，4个按键连接EINT26～29
+主板电路图的P3，对应GPX3_2到GPX3_5
+可以看<mach/gpio.h>找到GPX3_2对应的gpio号，然后用gpio_to_irq获得对应的中断号
+
+主题：	
+	1. 加锁(同步)的基本概念
+	2. atomic_t(原子变量)
+	3. mutex(互斥锁)
+
+	同步：synchronization
+
+1. 加锁(同步)的基本概念
+=======================
+(1)为什么要保护
+----------------------
+如果模块中的某个全局变量可以被多个进程/中断同时访问，那么就必须要提供加锁机制进行保护。同时写是不允许的。
+检查之前写的基于缓冲区的char驱动例子，该例子是不够安全的；
+
+
+(2)和加锁保护相关的名词
+-----------------------
+临界区(critical region)
+访问要保护的变量的代码段，称为临界区;
+临界区中同一时间只能一个人进入;
+临界区的代码可能分散在不同的函数中。如果要对临界区加锁，则必须保证在临界区的所有部分都加锁;
+
+同步(synchronization)
+就是加锁。同步是保证临界区只进一个人的机制。
+
+竞争(race condition)
+如果有多个人同时进入临界区，就称为竞争。一般来说，认为出现竞争是错误的。
+
+
+(3)加锁的原则
+--------------------
+加锁是自愿的:
+内核不强迫程序加锁，但一旦使用了锁，驱动设计人员应该保证正确地使用锁，并保证在临界区的每个部分都加上锁
+
+不要用锁来实现功能:
+锁就是用来避免对变量同时访问，是一种保护机制;
+如果将加锁相关代码去掉，程序功能应该没有任何变化;
+
+
+
+2. atomic_t(原子变量)
+==========================
+对于i++类型的临界区，如果用普通的加锁保护，效率太低，因此内核推荐用atomic_t类型的变量来替代传统的int型变量;
+
+例子：
+#include <linux/atomic.h> //或<asm/atomic.h>
+
+//声明并初始化atomic_t变量
+atomic_t mycnt = ATOMIC_INIT(5);
+或：
+atomic_t mycnt;
+atomic_set(&mycnt, 5);
+
+atomic_t mycnt;
+mycnt.counter = 5; //不好，破坏了封装性 
+
+//获得atomic_t中的计数
+int i = atomic_read(&mycnt);
+
+//变量的++，由内核来保证++操作是原子的
+atomic_inc(&mycnt);
+
+有几个最常见的atomic函数，对应int型的操作：
+atomic_add / +=
+atomic_sub / -=
+atomic_inc / ++
+atomic_dec / --
+
+atomic的具体实现参考对应处理器结构体的atomic.h文件
+ARM处理器为arch/arm/include/asm/atomic.h
+
+在缓冲区的char驱动中增加打开计数；
+
+
+
+5. mutex互斥锁
+====================
+在用户态学习多线程编程时，大家曾经学习过pthread_mutex锁；
+内核有类似的锁，即mutex互斥锁；
+
+mutex的特性：
+(1)同一时间只能一个人持有锁
+(2)拿不到锁的进程睡眠
+(3)持有锁时可以睡眠(必须确保能被唤醒)
+
+使用例子：
+#include <linux/mutex.h>
+
+//声明mutex锁
+struct mutex mylock;
+
+//用之前要先初始化
+mutex_init(&mylock);
+
+//加锁和解锁
+//mutex_lock(&mylock);
+ret = mutex_lock_interruptible(&mylock);
+if (ret)
+	return -ERESTARTSYS;
+...//临界区
+mutex_unlock(&mylock);
+
+为写过的驱动增加锁保护；
+xxx_interruptible(): 可打断(睡眠)
+
+
+
+主题：	
+	1. char驱动的子系统
+	2. INPUT子系统
+	3. TTY子系统
+	4. FB子系统
+	5. V4L2子系统
+
+
+1. char驱动的子系统
+=======================
+(1)char驱动子系统的作用
+---------------------
+子系统要负责创建/dev/下的设备文件，并为一类设备提供通用的控制方法；
+
+(2)子系统可以让用户态接口尽量稳定
+--------------------------
+由于用户态访问设备文件时，首先要调用子系统的代码。因此，子系统尽量保持代码对用户态稳定(尤其是ioctl命令稳定)。如果硬件或内核有变化，基本上不用修改用户态的应用程序。
+
+(3)几种最常见的char驱动子系统
+--------------------------
+input(输入)
+tty(终端)
+fb(frame-buffer)
+v4l2(video for linux 2)
+
+
+
+2. INPUT子系统
+========================
+(1)针对的设备类型
+-----------------------
+输入子系统，针对鼠标，键盘，按键，触摸屏，加速度传感器等
+
+
+(2)设备文件
+-----------------------
+输入子系统创建的设备文件位于/dev/input目录下的event*和mouse*
+为了知道每个设备文件对应哪个硬件，可以参考子系统提供的proc文件：
+/proc/bus/input/devices
+
+
+(3)内核代码位置
+-----------------------
+input子系统和一部分input驱动的实现代码位于内核中的drivers/input子目录下；
+其中，input.c和evdev.c是input子系统实现的核心文件；
+mouse/touchscreen等目录下是input驱动的实现;
+
+input子系统还有自己的头文件<linux/input.h>；
+有些内容只供input驱动使用，还有些内容可以供用户态app使用；
+
+比如input_event结构体，就是由驱动初始化并传给input子系统，用户态app从/dev/input/eventx中读到的就是该结构体
+
+(4)参考资料
+---------------------
+关于input驱动的设计，可以参考精通一书第7章
+
+(5)用户态测试例子
+------------------------
+例子见08input/
+目录下有3个用户态测试例子，可以解读驱动传给用户态的input_event结构体，也可以向鼠标等设备注入事件；
+
+
+
+3. TTY子系统
+=====================
+(1)针对的设备类型
+---------------------
+tty子系统也可以称为终端子系统，传统的终端是显示器和键盘的组合，对于嵌入式设备来说，针对的主要是UART串口设备；
+
+(2)设备文件
+---------------------
+tty子系统创建的设备文件在/dev目录下：
+tty0~tty63是显示器加键盘的组合；
+ttyS0~S3是pc上的串口；
+ttySAC0~ttySAC3是4412上的串口文件；
+ttyUSB0是usb串口对应的设备文件；
+tty驱动可以选择自己设备的主设备号，起始次设备号，设备名等;
+
+(3)内核代码位置
+---------------------
+tty子系统的代码位于linux-3.0.86/drivers/tty目录，包括tty_io.c，tty_buffer.c等；
+
+tty驱动的代码则位于drivers下面的很多位置，比如usb串口的tty驱动位于drivers/usb/serial目录下；
+
+e4412的串口驱动则位于drivers/tty/serial目录下，包括serial_core.c，samsung.c和s5pv210.c，其中s5pv210.c为串口驱动的platform_driver封装；具体的驱动在前两个文件中；
+如果在4412开发板上外括一个串口芯片，写驱动时可以参考samsung.c以及serial_core.c
+
+(4)参考资料
+-----------------------
+关于tty驱动的设计，可以参考LDD3书的第18章，以及精通linux驱动一书第六章；
+关于tty应用程序的设计，参考APUE书的第18章"终端IO"；
+在glibc中定义了若个库函数，封装了对tty设备的ioctl命令，可以用man手册查看，如tcgetattr，tcsetattr等
+
+(5)用户态测试例子
+------------------------
+tty应用程序的例子见09tty/目录下的tty_read.c和tty_write.c
+
+
+
+4. FB子系统(Frame Buffer)
+=========================
+(1)针对的设备类型
+----------------------
+fb即frame buffer，即显示子系统；
+包括芯片内部的显示控制器(FIMD)，以及外面连接的并行RGB、VGA、HDMI、MIPI等接口的显示设备(OLED/LCD/CRT)；
+
+4412内部的第42章描述了显示控制器；该控制器通过并行线连接到开发板的LCD屏幕；咱们的板子LCD屏的分辨率为800*480
+
+(2)设备文件
+----------------------
+fb子系统在用户态创建的设备文件为/dev/fb*，用户态可以准备一张bmp图片，将其写入fb文件，屏幕上就会出现图片的内容；
+如果在4412开发板上，则设备文件为/dev/graphics/fb*;
+
+(3)内核代码位置
+-----------------------
+fb子系统的代码位于drivers/video/目录下，包含fbmem.c等；
+
+大部分fb驱动也在drivers/video/目录下，可以参考s3c2410fb.c，该文件是2410处理器的fb驱动；
+
+E4412的fb驱动的实现代码位于drivers/video/samsung/目录下，4412的fb驱动由s3cfb_ops.c,s3cfb_main.c和s3cfb_fimd6x.c构成；
+
+(4)参考资料
+---------------------
+关于fb驱动的设计，可以参考精通linux驱动设计一书第12章
+还可以参考drivers/video/s3c2410fb.c，看看老的2410/2440芯片的fb驱动怎么写
+
+(5)用户态测试例子
+---------------------
+例子见10fb目录下的fb01.c和fb02.c
+fb01.c是通过ioctl命令从/dev/fb设备文件获取硬件信息；
+
+fb02.c的工作是在用户态将一个点阵式图片(bmp)用mmap的方式写入/dev/fb，在屏幕上会出现该图片；
+
+可以交叉编译后，在开发板上运行这两个例子，要注意的是；
+1.打开的设备文件为/dev/graphics/fb0
+2.要用drv-arm/09fb/pictures/下面的工具制作若个张800*480(32bpp)的图片
+3.图片需要用adb push到开发板上
+
+大家还可以尝试一下，将fb02.c和pictures下面制作点阵图片的工具结合，直接在屏幕上现场解码jpeg图片并显示(基于jpeg库/还可以考虑基于4412内部的硬件jpeg解码)；
+
+
+
+5. V4L2子系统
+======================
+(1)针对的设备类型
+-----------------------
+V4L2即Video for Linux 2，为视频(多媒体)子系统；
+主要针对摄像头、电视卡等视频流的设备，还可以针对一些多媒体设备，比如4412内部的JPEGcodec，MFCcodec，ImageRotator等，三星都提供了对应的v4l2驱动；
+
+(2)设备文件
+-----------------------
+v4l2设备在用户态的设备文件是/dev/video*；
+如果连接的是usb摄像头，一般在pc上的设备文件为/dev/video0;
+如果是在4412开发板上，v4l2设备的文件也对应/dev/video*，但4412将JPEGcodec等也识别为video文件；
+可以参考/sys/class/video4linux/videox/name文件(x可以是0/1/2/3等)，确定/dev/下的video文件对应哪个设备；
+
+
+(3)内核代码位置
+-----------------------
+v4l2子系统的相关代码位于drivers/media/video目录下，包括v4l2-ioctl.c，v4l2-dev.c等;
+
+如果采用USB摄像头，则linux提供统一的UVC驱动(USB Video Capture);
+uvc驱动代码位于drivers/media/video/uvc目录下；
+
+如果从淘宝上采购了友善配套的ov5640摄像头(120元)，则该摄像头和4412内部的摄像头接口(见4412手册43章)相连，将该摄像头模块连接到开发板的CON17接口(20pin)；
+
+相关的驱动分为两部分：
+一部分是4412摄像头接口的驱动(三星写的，提供源代码);
+一部分是外接的摄像头模块的驱动(友善写的，不提供源代码，只有ko文件)；
+
+E4412的摄像头接口驱动位于drivers/media/video/samsung/fimc目录下；
+包括fimc_capture.c, fimc_dev.c, fimc_regs.c等，代码超过1万行了；
+
+外接的摄像头模块为OmiVision的ov5640，但友善没有提供对应的源代码，只提供了ov5640.ko，可以在android5.0下使用；
+可以参考drivers/media/video目录下的ov9640.c等代码，自己写ov5640.c；
+写用户态app时，还可以参考android5.0源码下面的摄像头访问库
+
+
+(4)参考资料
+--------------------
+关于v4l2驱动的设计，没有太多可供参考的资料(参考书没有对应的章节)。。。
+
+关于v4l2应用程序的设计，可以参考11v4l2/docs目录下的v4l2.pdf，该文档是v4l2用户态API的参考文档；
+
+
+(5)用户态测试例子
+---------------------
+在v4l2/目录下，还有很多我写的用户态测试程序，适用于usb摄像头；
+尤其是catch03.c，该程序捕获摄像头拍摄的点阵图片，将数据存储为jpeg图片(利用jpeg库)；
+
+还可以用用户态的库，如ffmpeg库，将摄像头拍摄到的点阵图片进一步转换成mpeg或h.263/h.264的视频流；
+
+更进一步，还可以利用4412内部的MFCCodec(硬件编解码器)来实现视频流的编码；
+
+
+
+
+
