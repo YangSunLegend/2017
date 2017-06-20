@@ -1,0 +1,1178 @@
+=================================
+2017-2-21
+=================================
+	在linux中一切皆文件
+1.终端
+	终端提示符
+	[root@localhost 桌面]#
+		part.1	当前以什么用户登录的终端
+					root		超级用户
+		@		分割符
+		part.2	主机名
+					localhost	默认主机名
+		空格		分割符
+		part.3	当前所在目录
+					~			家目录(相对)
+		-----------------------------------
+			例:
+				假如当前用root用户登录的终端
+				~	代表root用户的家(/root)
+					[root@localhost ~]#
+				假如当前用tom用户登录的终端
+				~	代表tom用户的家(/home/tom)
+					[tom@localhost ~]$
+		-----------------------------------
+		part.4	#代表当前以超级用户登录
+				$代表当前以普通用户登录
+2.在终端提示符之后接收命令或者可执行文件
+	
+	[root@localhost 桌面]# 命令 参数 选项
+	
+		命令
+			cd(切换目录<改变目录>)
+				1.cd 目录名
+			---------------------
+				例:[root@localhost 桌面]# cd 123
+					加入cd之后写的是目录名
+					123目录在桌面中找,要是没有
+					bash: cd: 123: 没有那个文件或目录
+			---------------------
+				2.cd 路径
+						1>绝对路径
+							从根目录开始一层一层递进
+						2>相对路径
+							除了绝对路径
+				3.直接cd回车
+						回到家目录
+				4.cd ..
+						切换到上一级目录
+				-----------------
+					例:[root@localhost include]# cd
+						直接回root用户的家目录
+						[tom@localhost include]$ cd
+						直接回tom用户的家目录
+				-----------------
+
+			ls(显示当前目录下的文件名)
+				1.ls	文件名
+				2.ls -a	显示所有文件(包括隐藏文件)
+						.文件名	隐藏文件
+						.	当前目录
+						..	上一级目录
+				3.ls -i	显示文件inode号
+						通过文件inode号管理文件,
+						在同一分区内文件inode号不会重复
+				4.ls -l	以长格式显示信息
+drwxr-xr-x 28 root root 4096 2月  21 14:34 123
+-rwxr-xr-x  1 root root 6473 2月  21 10:45 a.out
+
+part.1	文件类型(7)
+		-		普通文件
+		d		目录文件
+		c		字符设备文件
+		b		块设备文件
+		p		管道文件
+		s		socket网络套接字文件
+		l		链接文件(符号)
+			-----------------------------
+				链接方式
+					1.硬链接
+					2.符号链接
+			-----------------------------
+part.2	文件权限
+			(1.字符方式表示	2.数字方式表示)
+			(1.基本权限		2.高级权限)
+			rwxr-xr-x a.out
+				rwx(前三个)	文件所有者的权限
+				r-x(中三个)	文件所属组的权限
+				r-x(后三个)	其他用户的权限
+			r	可读
+			w	可写
+			x	可执行
+			-	无(该处没有权限)
+part.3	文件连接数
+
+part.4	文件所属者
+
+part.5	文件所属组
+
+part.6	文件大小
+
+part.7	文件最后修改日期
+
+part.8	文件名
+
+			pwd(当前所在目录的绝对路径)
+				------------------
+					例:
+			[root@localhost include]# pwd
+			/usr/include
+				(显示的是include目录的绝对路径)
+				------------------
+			
+			touch(创建普通性质文件)
+				1.touch 文件名
+					可以touch相同的文件名
+					修改的是最后修改时间,文件内容不变
+				2.touch 文件名 文件名 ...
+					可以创建多个文件
+				3.touch {1..20}			
+					可以创建1-20个普通性质文件
+					(或者{a..z})
+			mkdir(创建目录文件)
+				1.mkdir 文件名
+					不可以mkdir相同的目录文件名,报错
+				2.mkdir 文件名 文件名 ...
+					可以创建多个文件
+				3.mkdir {1..20}			
+					可以创建1-20个普通性质文件
+					(或者{a..z})
+			cat(查看文件内容(普通文件))
+				cat 文件名
+				less
+				more
+				head
+				tail
+			
+			cp(拷贝文件)
+				1.cp 源文件 目标文件
+				2.cp -r(拷贝目录时) 
+			--------------------------
+		例:如果在50个文件中指向复制3个文件到其他目录
+		cp {fcodpamdpoa,mdslamda,snajda} ../xyz		
+			--------------------------
+
+			diff(比较两个文件是否相同)
+				diff file1 file2			
+				
+			mv(剪切/移动/改名字)
+				mv 源文件名 目标文件名
+					1.mv 123 abc
+						把123改成abc名字
+					2.mv abc ..
+						把abc剪切到上一级目录
+					mv在剪切文件时不用加-r
+
+			rm(删除)
+				1.rm filename
+					删除filename,有询问
+				2.rm filename1 filename2 filename3
+					删除filename(1-3),有询问
+				3.rm {a..z}
+					删除a-z文件,有询问
+				4.rm *
+					*该目录下的所有文件
+					*.c代表所有以.c结尾的文件
+				5.rm -f(force强制)
+					强制删除(删除时不询问)
+				6.rm -r(递归的操作)
+				
+				7.不要轻易使用
+					rm -rf
+					[root@localhost /]# rm -rf *
+			ln
+				1.ln 源文件 目标文件
+					创建硬链接文件
+						源文件和目标文件共用同一个inode号
+						任意修改其中一个文件另一个文件改变
+						删掉源文件对目标文件没有影响
+				2.ln -s 源文件 目标文件
+					创建符号链接文件
+						源文件和目标文件不共用一个inode号
+						任意修改其中一个文件另一个文件改变
+						删掉源文件对目标文件有影响
+
+				grep 针对文件内容进行过滤
+				# grep 'root' /etc/passwd
+				# grep --color 'root' /etc/passwd
+				# grep --color '^root' /etc/passwd
+				# grep --color 'bash$' /etc/passwd
+				# grep 'failure' /var/log/secure
+					^查找的内容出现在行首
+					$查找的内容出现在行尾
+
+
+	man
+	帮助手册8本
+	1   用户命令
+	2   内核系统调用
+	3   库函数(标准)
+	4   特殊文件和设备
+	5   文件格式和规范
+	6   游戏
+	7   规范标准和其他页面
+	8   系统管理命令
+
+	命令帮助：   章节1，章节8
+	函数帮助：   章节2，章节3
+
+	一般情况是不需要使用章节号，例如
+	# man ls
+	# man useradd
+	# man setfacl
+
+	# man open              //2
+	# man fopen             //3
+
+	技巧：在所有章节中查询
+	# man -a open
+
+	# man -f open
+	# man 2 open
+
+	进入 man手册
+	man 3 printf
+	退出 man手册
+
+	
+	编辑器  vim(vi emacs gedit)
+	编译器  gcc
+
+	编写程序-编辑器
+		vim
+				vim 1.c
+					|
+		按iIoOaA		|   按:
+	编辑模式<----命令模式---->命令行模式	保存		w
+			---->		<----			退出		q
+			按esc		按退格键			所有		all
+										强制		q！
+	命令模式
+	光标定位:
+	hjkl
+	gg G        gg 首行 G末行
+	3G          进入第三行
+	/string     (n N 可以循环的)  快速定位到某一行
+	文本编辑:
+	多行操作的话在前边加上行数
+	复制    yy 3yy ygg yG
+	粘贴    p
+	剪切    dd      dd 3dd dgg dG
+	删除一行
+	x           删除光标所在的字符
+	D           从光标处删除到行尾
+	u           undo撤销
+	ctrl + r	redo重做
+	r           可以用来修改一个字符
+	进入其它模式
+	a           进入插入模式
+	i           进入插入模式
+	o           进入插入模式
+	A           进入插入模式
+
+	:           进入末行模式（扩展命令模式）
+	v           进入可视模式
+	ctrl + v	进入可视块模式
+	V           进入可视行模式
+	R           进入替换模式
+
+	插入模式
+	ctrl + p    唯一补齐
+
+	可视模式
+	通过上下键选中代码,按 = 进行调整
+	按 gg 首行 或者 G 末行
+	可视块模式
+	块插入(在指定块前加入字符): 
+		选择块,I在块前插入字符,ESC
+		选择块,A在块后插入字符,ESC
+	块替换:
+		选择块,r输入替换的字符
+	块删除:
+		选择块,d
+	块复制:
+		选择块,y
+	
+查找替换(:范围 s/old/new/选项)
+	:1,5 s/root/yang/           从1－5行的root 替换为yang
+	:5,$ s/root/yang/           $表示最后一行
+	:1,$ s/root/yang/g = :% s/root/yang/g   %表示全文  g表示全局
+	:,8 s/root/yang/            从当前行到第8行
+	:4,9 s/^#//                 4-9行的开头#替换为空
+	读入文件/写文件(另存为)
+	:w                          存储到当前文件
+	:w /aaa.txt                 另存为/aaa.txt
+	:r /etc/hosts               读入文件到当前行后
+	:5 r /etc/hosts             读入文件到第5行后
+	  设置环境
+	  :set nu                         设置行号
+	  :set ic                         不区分大小写
+	  :set ai                         自动缩进
+	  :set list                       显示控制字符
+	  :set nonu                       取消设置行号
+	  :set noic
+
+	  永久的环境:
+	  /etc/vimrc                      影响所有系统用户
+	  ~/.vimrc                        影响某一个用户
+
+# vim ~/.vimrc
+	  set ai
+	  set si
+	  set ts=4
+	  set sw=4
+	  set nu
+
+# vim -O main.c func.c          按两次^w切换
+# vim -p main.c func.c          ^PgUp, ^PgDn
+	  如果终端打开多个标签,使用^+alt+PgUp 或者 ^+alt+PgDn
+
+
+ctrl + shift + +	放大字体
+ctrl + -			缩小
+ctrl + shift + t	开终端(标签)
+ctrl + pgup/pgdn	切换
+ctrl + d			关闭终端标签
+鼠标选中				复制
+鼠标中轴键			粘贴
+tab					补齐
+esc + .				上一条命令的最后一个参数
+
+
+=================================
+2017-2-22
+=================================
+
+linux介绍
+	
+		 /              	根目录
+		 ├── bin     		存放用户二进制文件
+		 ├── boot    		存放内核引导配置文件
+		 ├── dev     		存放设备文件
+		 ├── etc     		存放系统配置文件
+		 ├── home    		用户主目录
+		 ├── lib     		动态共享库
+		 ├── lost+found 	文件系统恢复时的恢复文件
+		 ├── media   		可卸载存储介质挂载点
+		 ├── mnt     		文件系统临时挂载点
+		 ├── opt     		附加的应用程序包
+		 ├── proc    		系统内存的映射目录，提供内核与进程信息
+		 ├── root    		root 用户主目录
+		 ├── sbin    		存放系统二进制文件
+		 ├── srv     		存放服务相关数据
+		 ├── sys     		sys 虚拟文件系统挂载点
+		 ├── tmp    		存放临时文件
+		 ├── usr     		存放用户应用程序
+		 └── var     		存放邮件、系统日志等变化文件
+
+rpm
+			已安装
+				-q  查询
+				-qi 显示查询包的信息
+				-ql 显示查询包安装了那些文件
+				-qf 查看一个文件的归属
+				-qa 查看机器上安装的所有包
+				| grep vim  过滤查看所有安装的vim的包
+				-v  这个包安装了和现在的区别(验证安装的包是不是缺少文件)
+				-e  卸载安装包
+					加的不是软件包的名字,
+					加的是服务的名字
+
+			未安装
+				-qpl    显示查询包需要安装那些文件
+				-i  install(安装)
+				-v  信息
+				-h  显示进度条
+				-U  更新
+			
+			--nomd5			//不检验软件包的签名
+			--force			//强制安装软件包 （通常已安装）
+			--nodeps			//忽略依赖关系
+----------------------------
+	rpm安装软件
+		1.找到.rpm的软件包
+		2.rpm -ivh xxxx.rpm		//进行安装
+	rpm卸载软件
+		注:当使用rpm卸载软件时,需要知道的是软件的名字,
+		并不是软件包的名字,所以需要查询
+		1.rpm -qa |grep 软件关键字
+			通过第一步可以找到软件的名字
+		2.rpm -e 软件名字
+----------------------------
+
+*****************************************************
+安装星际译王
+
+下载完成后，进入文件目录下。如果是.rpm文件，可以直接双击运行，自动安装就可以了，也可以执行下面的命令进行安装：
+
+    rpm -ivh filename.rpm 
+
+如果是.bz2文件，执行下面的命令进行解压：
+
+    tar -xjvf filename.tar.bz2
+
+进入解压后的目录下执行：
+
+    ./configure
+    make
+    makefile
+即可完成Stardict的安装
+
+安装星际译王的词库
+
+下载完成后进入文件所在目录执行下面命令：
+
+    tar -xjvf filename.tar.bz2
+    mv directory(目录名) /usr/share/stardict/dic
+或则执行：
+
+    tar -xjvf filename.tar.bz2 -C /usr/share/stardict/dic
+
+完成安装。
+
+******************************************
+-------------------------
+
+	安装Mplayer
+		1.解压缩源码包
+		2.执行./configure
+		3.make -j4
+			有可能报yasm没有安装
+			1>解压缩源码包
+			2>执行./configure
+			3>make -j4
+			4>make install
+		4.make install
+
+-------------------------
+
+	配置局域网yum
+	
+	1.和服务器ping通
+
+	2.修改配置文件
+		在/etc/yum.repos.d/
+		创建了一个普通文件 yum.repo
+	3.
+		在yum.repo中
+		[yum]
+		name=yum
+		baseurl=ftp://192.168.1.2/rhel6.4
+		enabled=1
+		gpgcheck=0
+		保存退出
+			注:ftp之后的IP地址是网络yum源的IP地址
+				或者是服务器的IP地址
+	
+	4.清除yum信息
+		yum clean all	
+	5.获取
+		yum repolist
+	6.通过yum来安装
+
+	配置本地yum源
+	
+	1.和操作系统一致的镜像
+
+	2.把镜像挂载到/mnt目录上
+		1.不要重复挂载
+		2.使用完之后一定要卸载
+		3.卸载的时候,不要在挂载的目录中卸载
+		4.千万不要挂载到	 /   /root
+
+		mount	挂载
+			在终端中敲mount
+				直接把挂载信息打印出来
+		mount 参数 要挂载的东西 挂载到的目录
+			例子:
+				mount 参数 xxx.iso /mnt
+					参数		-o
+							loop				
+
+		umount	卸载
+		
+		umount 卸载的目录
+	3.修改配置文件
+		在/etc/yum.repos.d
+		自己创建的yum.repo
+	4.
+		[yum]
+		name=yum
+		baseurl=file:///mnt
+		enabled=1
+		gpgcheck=0
+	5.清除yum信息
+		yum clean all
+	6.重新获取yum源
+		yum repolist
+======================================
+yum -y install 服务名		安装
+
+yum -y remove 服务名			卸载
+
+yum -y groupinstall 服务名	安装软件组的包
+
+	严禁
+		rm -rf /*
+		yum -y remove *
+
+======================================
+
+		yum
+			编写yum的配置文件
+
+			在/etc/yum.repos.d/目录下创建yum.repo
+			[yum]
+			name=yum					使用的yum名称
+			baseurl=file:///mnt			使用的yum源是什么
+			enabled=1					是否使能
+			gpgcheck=0					检测包是否是红帽子公司的,如果是1的话还要写gpgkey(密钥)
+
+		本地yum
+			注意1.是否挂载iso文件
+					mount -o loop xxx.iso 目录名
+				2.配置文件是否正确(baseurl中写的目录是否正确)
+				baseurl=file:///mnt/Server
+		网络yum
+			注意1.是否和服务器是连通状态
+					ping 172.16.8.100
+					(如果ping不通,重启网络服务)
+					service network restart
+				2.配置文件是否正确(baseurl中写的目录是否正确)
+				baseurl=ftp://172.16.8.100/rhel6.4
+
+			mount 
+
+			安装所有和gcc有关的包		yum -y install gcc*
+			卸载所有和gcc有关的包		yum -y remove gcc*
+			手动清空缓存				yum clean all
+			获取yum源信息			yum repolist
+
+			1. 安装特定平台的软件包
+				yum list httpd lftp
+				yum install httpd
+				yum install httpd.i386
+				yum install httpd.x86_64
+
+			2. 安装软件包组
+				yum grouplist   
+				yum -y groupinstall "开发工具"
+
+			3. 安装非YUM源中的软件
+			yum -y install /var/ftp/ntfs-3g-2011.4.12-5.el6.x86_64.rpm//已下载到本地
+			yum -y install http://redhat.com/soft/ntfs-3g-2011.4.12-5.el6.x86_64.rpm
+
+			如果配置的是本地yum源的话,需要挂载镜像
+
+			mount -o loop xxx.iso /mnt
+			
+			卸载
+			umount /mnt
+			记住卸载的时候一定不要在这个目录当中或者打开这个目录
+			否则提示 device is busy
+
+压缩与解压缩
+
+	tar xvf
+			tar v   显示详细过程，比较慢
+			-cvf        file.tar 		打tar包
+				tar -cvf file.tar file
+			-xvf		  file.tar		解压缩
+				可以解任意tar包
+			-cvzf       file.tar.gz /path   压缩
+			-xvzf       file.tar.gz     	释放
+			-cvjf       file.tar.bz2 /path  压缩
+			-xvjf       file.tar.bz2        释放
+			tar xvf file.tar -C 2/
+				-C	指定目录
+网络基础
+-------------------------
+	ping IP地址
+		查看是否ping通
+	ping IP地址 -c3
+		ping三次
+	ifconfig
+		查看自己的网络信息(IP地址)
+	ifconfig 网络接口
+		查看特定的网络接口信息
+	--------------------
+		配置网络服务
+			1.修改配置文件
+	/etc/sysconfig/network-scripts/ifcfg-eth0
+			2.setup
+			无论用哪种方式都需要重启网络服务
+			service network restart
+	--------------------
+-------------------------
+
+	1.网络接口
+		eth0		以太网接口
+		wlan0		无线接口
+		lo			本地环回接口		//用于本地网络进程通信
+		virbr0		桥接接口 <虚拟交换机>
+		br0			桥接接口 <虚拟交换机>
+	2.查看网络信息
+		主机名、IP、网关、DNS
+		ip addr				//查看IP、掩码、MAC...
+		ip addr show eth0	//只显示eth0的信息
+	3.查看网络配置文件
+	/etc/sysconfig/network-scripts/ifcfg-eth0
+	
+	DEVICE=eth0					设备名
+	BOOTPROTO=static			是否是动态
+	静态 static/none		动态 dhcp
+	IPADDR=192.168.1.1			IP地址
+	ONBOOT=yes					是否启动网络
+	TYPE=Ethernet				模式
+
+	ping通服务器
+		ping 172.16.8.100
+	
+	重启网络服务
+		service network restart
+	关闭防火墙
+		/etc/init.d/iptables stop
+	关闭SElinux
+		setenforce 0
+	1.网线有没有链接到网口
+	
+	2.网口灯是否是亮的
+
+	3.mii-tool eth0
+		1>link ok			连通
+		2>no link			没有连通
+		3>no such device	设备不识别
+			2> 和 3> 可以把网线插到另一个网卡上
+		172.16.8.100
+	4.ping 172.16.8.100 -c3
+
+	5.service network restart	重启网络服务
+
+	6.网卡配置文件
+		vim /etc/sysconfig/network-scripts/ifcfg-eth0
+									或者ifcfg-eth1
+		临时修改ip地址
+			ifconfig eth0 192.168.1.111 up	
+	7.重启服务
+	
+	8.ifconfig
+===================
+2017-2-23
+===================
+------------------------
+	使用yum安装服务
+		1.确定使用的是本地yum源还是网络yum源
+			vim /etc/yum.repos.d/xxx.repo
+		2.如果是本地yum源
+			1>挂载镜像
+			mount -o loop xxx.iso /mnt
+			2>yum clean all
+			3>yum repolist
+			4>yum -y install 服务
+		3.如果是网络yum源
+			1>本机和服务器是ping通的状态
+				1)修改网络配置
+				2)重启网络服务
+					service network restart
+			2>yum clean all
+			3>yum repolist
+			4>yum -y install 服务
+------------------------
+搭建ftp服务
+		确定ftp服务所依赖的包(用yum来安装)
+		包名				vsftpd
+		服务名			vsftpd
+		配置文件			/etc/vsftpd/vsftpd.conf(控制二进制文件如何运行)
+		共享出来的目录是	/var/ftp/
+		/etc/init.d/vsftpd start	启动
+		/etc/init.d/vsftpd stop		关闭
+		/etc/init.d/vsftpd restart	重启
+
+		用户在访问服务器的时候应该
+		1.关闭防火墙				/etc/init.d/iptables stop	
+								service iptables stop
+
+			(/etc/init.d/iptables status 查看防火墙的状态)
+		2.关闭SElinux				setenforce 0
+			(getenforce获取SElinux的状态)
+		3.重启服务					service vsftpd restart
+		4.链接服务器 lftp 172.16.8.100
+
+		
+	
+			lftp 服务器的ip地址
+				通过lftp访问服务器
+			如果提示lftp commond not found
+			说明没有安装lftp(通过yum来安装)
+			
+			get 普通文件名
+				下载普通性质文件
+			mirror 目录名
+				下载目录文件名
+
+			quit
+			ctrl + d
+			bye
+			by	
+				退出lftp
+		
+搭建nfs服务
+		确定nfs服务所依赖的包(用yum来安装)
+		服务名				nfs
+		配置文件				/etc/exports
+
+		/share *(ro,sync)
+		/share				共享的目录
+		*					允许能ping通的所有机器访问
+		ro					read only
+		sync				设置NFS服务器同步写磁盘,这样不会轻易丢失数据,建议所有的NFS共享目录都使用该选项
+	
+		用户在访问服务器的时候应该
+		1.关闭防火墙			/etc/init.d/iptables stop
+			(/etc/init.d/iptables status 查看防火墙的状态)
+		2.关闭SElinux		setenforce 0
+			(getenforce		获取SElinux的状态)
+		3.重启服务			service nfs restart
+		
+		在本地目录创建将来要挂载的目录
+		例:	在/目录创建一个目录文件text
+		
+		mount -t nfs 192.168.1.2:/share /mnt
+		mount				挂载命令
+		-t					用来表示文件系统类型
+		172.16.120.234:/text服务器的ip地址以及共享出来的目录
+		/mnt				用户本地创建的目录,用来挂载服务器目录
+-------------------------
+	注意:
+	1.当挂载的时候不可以挂载到!!!有文件的目录!!!
+	2.当挂载的时候不要重复挂载
+	3.当使用完挂载的东西时首先一定要卸载
+-------------------------
+		一定要在服务器停止服务之前,卸载被挂载的目录,否则会使客户机器卡死
+		umount /share
+		在卸载之前,确定不在想要卸载的目录当中,也不要有其他东西打开
+		会提示	device is busy
+++++++++++++++++++++++++++++++++++
+搭建ftp服务
+	服务器端
+		1.通过yum安装服务
+			yum -y install vsftpd
+		2.重启服务
+			service vsftpd restart
+		3.关闭防火墙
+			service iptables stop
+			/etc/init.d/iptables stop
+		4.关闭SElinux
+			setenforce 0			
+		把共享的文件放到/var/ftp
+	客户端
+		1.ping通服务器
+			ping ip地址 -c3
+		2.lftp 服务器ip地址
+			位置/链接到服务器
+			ftp
+			tftp
+			lftp					
+			浏览器
+		3.下载共享文件
+			get		普通文件
+			mirror	目录文件
+		4.bye
+搭建nfs服务
+	服务器端
+		1.通过yum安装nfs服务
+			yum -y install *nfs*
+		2.写nfs的配置文件
+			vim /etc/exports
+			/share *(ro,sync)
+			/share		nfs服务共享的目录
+			*			所有可以ping通服务器的ip地址
+						都可以访问
+			ro			只读
+			sync		同步
+		3.重启nfs服务
+			service nfs restart
+		4.关闭防火墙
+			service iptables stop
+			/etc/init.d/iptables stop
+		5.关闭SElinux
+			setenforce 0
+		共享的目录和配置文件里写的有关
+	客户端
+		1.ping通服务器
+			ping ip地址 -c3
+		2.挂载
+			mount -t nfs 服务器ip地址:共享目录 /mnt
+				/mnt		客户自己本地的目录
+		3.下载共享文件
+			cp
+		4.卸载
+			umount /mnt
+------------------------
+ftp服务和nfs服务上传
+	nfs上传
+	1.修改共享目录的写的权限
+	2.修改配置文件/etc/exports
+	3.重启服务
+	ftp上传
+	1.修改共享目录的写的权限
+		/var/ftp/test
+	2.修改配置文件/etc/vsftpd/vsftpd.conf
+		上传功能和写的权限都打开
+	3.重启服务
+		下载
+			get
+				下载到指定目录
+				-o -O
+				get -O /zack a.out
+				get a.out -o /zack
+					/zack	指定的目录
+					a.out	服务器中的文件
+			mirror
+		上传
+			put		普通性质文件
+			mirror -R 目录文件
+
+------------------------
+++++++++++++++++++++++++++++++++++
+
+ssh 服务
+
+远程登录计算机
+通过的是sshd服务
+使用时确定服务是否开启
+ssh ip
+
+	service sshd restart	重启
+					stop	关闭
+
+
+secure copy(安全拷贝)
+
+如果说从别人的机器上拷贝文件到自己目录里
+scp root@172.16.120.245:/test /
+
+如果说自己的文件拷贝给别人
+scp 1.c root@172.16.120.245:/
+
+拷贝目录的话使用参数 -r
+
+超用户模式修改root用户密码
+	1.重启
+	2.用上下键停到启动项的选择
+	3.用e来进入
+	4.选择有rhgb quiet的选项,加空格加1
+	5.按回车
+	6.按b
+	在文字终端界面下passwd
+	来修改root用户的密码
+	7.reboot重启
+
+===================
+2017-2-24
+===================
+
+用户管理
+	用户组管理
+		用户也称为用户账户(user account)      
+		它是计算机使用者的一种身份标识.    
+	功能上分类：超级和普通。   
+		操作系统在安装时自动创建的用户就是内置的 超级用户。 由超级用户手工创建的自定义用户变是普通用户。
+		root 它就是系统在安装时自动创建的，被系统赋予了管理的操作系统的一切权限。   
+	从范围上分类：本地用户和网络用户。  
+		创建于本机上的用户就称为本地用户 。 
+		创建于远程服务器上的用户就称为网络用户。
+		创建用户时：为用户分配一个唯一的编号，称为UID；
+		系统会为用户创建一个同名的组，并为组分配一个编号，称为GID，并把该用户加入该组中，本组也称为本用户的私有组或群组；
+		系统还会为用户在/home/创建一个与用户同名的主目录，也称为 家 目录(宿主目录)；
+		系统还会把/etc/skel/目录中的内容复制到用户 的家目录，做为基本的配置文件；
+		注:/etc/skel/也称为用户家目录的模板； 
+		系统还会为用户在/var/spool/mail/创建一个与用户同名的邮箱；
+		系统还会为用户分配一个命令的解释程序(文件)，默认是 /bin/bash文件。
+		系统还会把用户以上的所有信息写入到/etc/passwd 文件中。
+		例:
+			root:x:0:0:root:/root:/bin/bash
+			x表示密码，但是这里不显示，已经放到shadow
+			第一个0，表示用户id，后一个表示用户组id
+			后面哪个root是对该用户的描述。
+			/root表示用户目录(家目录)
+			/bin/bash表示该用户登录linux时用的shell。
+			组的信息会存储到/etc/group中
+
+		用户的密码信息在/etc/shadow文件中存储
+		例:
+root:$1$wOyeBaUM$HMfcouX/5ntoxeLHuvENp0:16770:0:99999:7:::
+			1）用户名
+ 			2）加密的密码
+			3）上次更改密码的日期（从1970-1-1开始）
+			4）最短密码期限（按天计算，0 = 无最短期限）
+			5）最长密码期限（按天计算）
+			6）密码警告期限（按天计算，0 = 未指定警告）
+			7）密码非活动期限（按天计算）
+			8）账号到期时间（从1970-1-1开始）
+			9）保留域
+			组的密码信息在/etc/gshadow文件中存储
+		系统约定		
+			uid: 0			特权用户
+			uid: 1~499		系统用户
+			uid: 500+		普通用户
+		创建用户				useradd 用户名
+		更改用户名密码		passwd 用户名
+			小结:当创建一个用户时,如果没有指定用户的主组,将会创建一个同名的组作为用户的主组.
+
+		切换用户				su 用户名		
+
+		删除用户				userdel 用户名
+			删除用户user10，但不删除用户家目录和mail spool
+		创建的用户添加到
+			已有的组里			useradd -g 组名 用户名
+		-----------------------------------------------
+		实例:
+		==添加用户==
+		useradd user02 -u 503			//创建用户usr02，指定uid
+		useradd user03 -d /aaa			//创建用户user03 指定家目录
+			代表家目录再创建之前不存在			
+
+		useradd user05 -s /sbin/nologin	//创建用户并指定shell
+		useradd user07 -G hr,it,fd		//创建用户，指定附加组
+		==删除用户==
+		userdel user10					//删除用户user10，但不删除用户家目录和mail spool
+		userdel -r user2				//删除用户user2，同时删除用户家目录和mail spool
+		==组成员管理==
+		注意:gpasswd将用户添加到组或从组中删除,只针对已存在的用户
+		gpasswd -a user07 it			//将某个用户加入到某个组
+		gpasswd -d user07 it			//删除用户usr07从it组
+		==密码管理==
+		passwd user01
+		-----------------------------------------------
+		groupadd net01 -g 2000	添加组net01，并指定gid 2000
+		
+文件权限管理
+		用户通过进程访问文件
+
+		基本权限(r w x)
+
+		drwxr-xr-x.  5 root root  4096 2月   4 12:10 文档
+		drwxr-xr-x.  2 root root  4096 12月 10 16:50 下载
+		drwxr-xr-x.  2 root root  4096 12月 10 16:50 音乐
+		drwxr-xr-x. 25 root root  4096 3月  10 15:10 桌面
+		----------------------------
+		rwx		r-x		r-x
+		属主		属组		其他
+		u		g		o
+						对文件影响			对目录影响		
+		r	读	4		可以读取文件内容		可以列出目录内容
+		w	写	2		可以更改文件内容		可以创建或删除目录中的任一文件
+		x	执行	1		可以作为命令执行文件	可以访问目录的内容
+		----------------------------
+		.是SElinux权限
+
+		1. 更改文件的属主、属组
+		=chown：
+		[root@ZaCk ~]# chown alice.hr file1//改属主、属组
+		[root@ZaCk ~]# chown alice file1	//只改属主
+		[root@ZaCk ~]# chown .hr file1	//只改属组
+			-R	影响目录文件下的子文件
+		=chgrp：
+		[root@ZaCk ~]# chgrp it file1		//改文件属组
+		[root@ZaCk ~]# chgrp -R it dir1	//改文件属组
+		(-R使文件夹下的所有文件都继承文件夹的属组)
+		2. 更改权限
+		=a. 使用符号
+				对象		赋值符	权限类型
+				u		+		r
+		chmod	g		-		w	file1
+				o		=		x
+		
+		[root@ZaCk ~]# chmod u+x file1		//属主增加执行
+		[root@ZaCk ~]# chmod a=rwx file		//所有人等于读写执行
+		[root@ZaCk ~]# chmod a=- file1		//所有人没有权限
+		[root@ZaCk ~]# chmod ug=rw,o=r file1	//属主属组等于读写，其他人只读
+		[root@ZaCk ~]# ll file1				//以长模式方式查看文件权限
+		-rw-rw-r-- 1 alice it 17 10-25 16:45 file1	//显示的结果
+		-----------------------------		
+		设置权限示例
+		针对hr部门的访问目录设置权限，要求如下：
+		1. root用户和hr组的员工可以读、写、执行
+		2. 其他用户没有任何权限		
+		root	hr	a.hr	b.hr	c.c
+				hr
+			1>root用户 mkdir com
+			2>groupadd hr
+			3>chown .hr com
+			4>chmod 770 com
+		-----------------------------
+		=b. 使用数字
+		[root@ZaCk ~]# chmod 644 file1
+		[root@ZaCk ~]# ll file1
+		-rw-r--r-- 1 alice it 17 10-25 16:45 file1
+		
+	文件权限管理之二:特殊权限
+		suid		4
+			如果文件本身user有x权限 u+s s是小写的
+			如果文件本身user没有x权限 u+s S是大写的
+		sgid		2
+		(给用户提权)
+			如果文件本身group有x权限 g+s s是小写的
+			如果文件本身group没有x权限 g+s S是大写的
+		sticky		1  粘滞位
+
+		设置特殊权限
+		a、字符
+		chmod u+s file
+		chmod g+s dir
+		chmod o+t dir
+
+		b、数字
+		chmod 4777 file
+		chmod 7777 file
+		chmod 2770 dir
+		chmod 3770 dir
+
+		在进程文件(二进制,可执行)上增加suid权限
+
+		suid权限(拥有suid权限的命令，任何用户用到这个命令都会拥有这个命令所有者的权限)
+			(执行命令时,以命令所有者的权限执行)
+			chmod u+s 命令文件
+
+		sgid权限(使新建的文件都会继承所在目录的组)
+			chmod g+s 目录
+
+		sgid sticky(sgid sticky 用户只能删除自己的文件)
+			chmod o+t 目录
+
+		
+		示例1：suid   普通用户通过suid提权
+			[root@ZaCk ~]# chmod u+s /bin/cat
+			[alice@ZaCk ~]$ cat /root/install.log
+
+		示例2：sticky 用户只能删除自己的文件   <针对目录>
+			[root@ZaCk ~]# mkdir /home/dir1
+			[root@ZaCk ~]# chmod 777 /home/dir1
+			测试：user1在/home/dir1建立文件, user2尝试删除！
+
+			[root@ZaCk ~]# chmod o+t /home/dir1
+			[root@ZaCk ~]# ll -d /home/dir1
+			rwxrwxrwt 2 root root 4096 09-02 02:26 /home/dir1
+
+		示例3：sgid 新建文件继承目录属组   <针对目录>
+			[root@ZaCk ~]# mkdir /home/hr
+			[root@ZaCk ~]# chgrp hr /home/hr/
+			[root@ZaCk ~]# chmod g+s /home/hr
+			[root@ZaCk ~]# ll -d /home/hr/
+			drwxr-sr-x. 2 root hr 4096 Dec  5 16:03 /home/hr/
+
+			[root@ZaCk ~]# touch /home/hr/file9
+			[root@ZaCk ~]# ll /home/hr/
+			-rw-r--r--. 1 root hr   0 Dec  5 16:03 file9
+	文件权限管理之三:umask
+		进程\新建文件\目录的默认权限会受到umask的影响,umask表示要减掉的权限
+		普通文件默认权限是666,目录文件默认权限是777		
+		
+		shell(vim,touch)	=======umask======>	新文件或目录权限
+		vsftpd				=======umask======> 新文件或目录权限 
+		useradd				=======umask======> 用户HOME
+
+		示例1: 在shell进程中创建文件
+		[root@ZaCk ~]# umask 			    //查看当前用户的umask权限
+		0022
+		[root@ZaCk ~]# touch file800
+		[root@ZaCk ~]# mkdir dir800
+		[root@ZaCk ~]# ll -d dir800 file800 
+		drwxr-xr-x. 2 root root 4096 3月  11 19:40 dir800
+		-rw-r--r--. 1 root root    0 3月  11 19:40 file800
+
+		示例2：修改shell umask值(临时)
+		[root@ZaCk ~]# umask 000
+		[root@ZaCk ~]# mkdir dir900
+		[root@ZaCk ~]# touch file900
+		[root@ZaCk ~]# ll -d dir900 file900 
+		drwxrwxrwx. 2 root root 4096 3月  11 19:44 dir900
+		-rw-rw-rw-. 1 root root    0 3月  11 19:44 file900
+
+进程管理
+
+	程序:文件,一般是二进制,静态
+	进程:是程序运行的过程,动态,有生命周期的,动态产生和消亡的.被发配Mem,CPU时间片
+
+	一个程序可能对应多个进程
+	父进程:程序运行时产生的第一个进程
+	子进程:由父进程衍生fork()出来的进程
+	注意:如果父进程终止,子进程会被init接管,孤儿进程
+		 如果子进程终止,父进程没有来收尸,那么子进程就会变成僵尸进程
+		fork					wait
+	进程------>------>父进程------->父进程------>--------->进程
+			|						|(收尸)
+			|			exec		exit |
+			------>子进程------->子进程------> -------->僵尸进程
+													(不收尸)
+	ps
+		看当前窗口进程(打开的每一个bash窗口都称为一个虚拟终端)
+	-a	查看所有终端	
+	-x	把没有依赖终端的也显示出来
+	-u	显示的信息更多
+	kill	（如果只敲kill默认后面加-15）
+			进程号
+	[root@ZaCk ~]# ps aux
+	USER	PID	%CPU	%MEM	VSZ		RSS	TTY	STAT	START	TIME	COMMAND
+	root	1	0.0		0.0		2164	648	?	Ss		08:47	0:00	init [5]  
+	
+		USER:	运行进程的用户
+		PID: 	进程ID
+		%CPU:	CPU占用率
+		%MEM:	内存占用率
+		VSZ:	占用虚拟内存
+		RSS:	占用实际内存 驻留内存
+		TTY:	进程运行的终端
+		STAT:	进程状态	 man ps (/STATE)			
+      		
+			R	运行
+			s	进程组而且是组长，下面有子进程	
+      		S	可中断睡眠 Sleep
+      		D	不可中断睡眠
+      		T	停止的进程 
+      		Z	僵尸进程
+      		X	死掉的进程
+      		Ss	s进程的领导者,父进程
+			S<	<优先级较高的进程
+	  		SN	N优先级较低的进程
+	  		R+	+表示是前台的进程组
+	  		Sl	以线程的方式运行	
+	
+		START:	进程的启动时间
+		TIME:	进程占用CPU的总时间
+		COMMAND	进程文件，进程名
+
+	伪终端
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
