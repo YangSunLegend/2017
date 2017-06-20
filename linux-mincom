@@ -1,0 +1,104 @@
+主题：	
+	1. linux内核介绍(arch/drivers/include)
+	2. 内核的编译
+	3. 第一个模块
+	4. 模块的相关工具(insmod/rmmod/lsmod/modinfo)
+	5. 模块的参数(module_param)
+
+作业：
+1.看linux/module.h。以后每天看课程中接触到的头文件
+重点看module结构体(模块的计数就在module结构体中)
+
+2.看__init宏
+举例：
+static int __init my_init(void)
+{ ... }
+
+实质上相当于：
+static int __attribute__((__section__(".init.text"))) 
+my_init()
+{ ... }
+__attribute__是传递给GNU C编译器的特性；
+__section__的含义是将my_init()函数放置到.init.text段中；
+如果没有__init的修饰，那么my_init()必定在text段里；
+
+
+
+1. linux内核的说明
+=======================
+内核见kernel目录，该目录下有两个内核，都是经过开发板厂商移植的，分别用于android4.2以及android5.0环境；
+如果开发板上运行android5.0，则应该使用linux-3.0.86内核；
+如果开发板上运行android4.2，则应该使用linux-3.5内核；
+
+
+
+2. 内核的编译安装
+=======================
+(1)使用厂商的默认配置
+$>cd kernel/
+$>tar xzvf linux-3.0.86-20150929.tar.gz
+$>cd linux-3.0.86/
+$>cp tiny4412_android_defconfig  .config
+
+(2)对内核进行配置
+$>make menuconfig
+通过图形界面(依赖于ncurses库)，决定编译的内核都包含哪些部分。
+最终的配置结果，存储在.config文件中
+具体的配置过程，参考kernel/readme.txt
+
+(3)内核的编译
+$>make
+编译生成zImage内核和.ko模块
+
+(4)将内核写入开发板
+参考以前的文档
+
+
+
+3. 第一个模块
+=========================
+写第一个模块例子
+分别在x86和arm上进行安装并测试
+要注意，linux内核源码的路径中，可以包含中文，但一定不能有空格；
+需要修改Makefile
+测试过程：
+$>make
+$>make install
+$>adb shell
+root@tiny4412#insmod /system/lib/modules/mod_test01.ko
+root@tiny4412#dmesg
+root@tiny4412#lsmod
+root@tiny4412#rmmod mod_test01
+
+如果有的同学usb口坏了，则只能连接串口线；
+可以参考02kernel目录下的文件夹，通过minicom下载文件；
+
+
+
+4. 模块的相关工具
+=========================
+(1)模块的手工加载
+$>insmod mod_test01.ko
+会调用模块的入口函数，如果是printk的信息，用$>dmesg查看
+查看内核信息：
+$>dmesg
+显示printk的信息
+$>dmesg -c
+清除printk的缓冲区
+
+(2)模块的手工卸载
+$>rmmod mod_test01
+
+(3)显示模块信息
+$>modinfo xxx.ko
+
+(4)列出内核中已经加载的模块
+$>lsmod
+
+
+5.模块的参数
+=========================
+用module_param宏来声明模块参数
+如果是数组型的参数，则可以使用宏module_param_array()
+写支持参数的模块例子
+
