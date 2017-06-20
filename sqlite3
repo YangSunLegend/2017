@@ -1,0 +1,65 @@
+
+sqlite3支持的类型：整数，文本，浮点，二进制
+
+
+sqlite3 ./test.sqlite		/*test.sqlite是数据库的名字*/
+
+.table	查看数据库中是否有表
+
+/*创建表
+	no学号 整型 主键 自动增长的 不能为空
+	name姓名 文本 不能为空
+	age年龄	整型
+*/
+create table student(no integer primary key autoincrement not null, name text \
+not null, age integer);
+
+//如果不存在创建
+create table if not exists student(no integer primary key autoincrement not null, name text \
+not null, age integer);
+
+//删除表   如果没有加;则表示输入没有结束
+drop table student;
+
+//向表中添加数据
+insert into student(name, age) values('zhangsan', 12);
+
+//查看表中的所有列
+select * from student;
+
+//查看name列
+select name from student;
+
+//按条件查询
+select * from student where age > 30;
+
+//条件多个都要满足用and, 
+select *from student where age >= 30 and no > 6;
+
+//条件多个满足其一即可用or, 
+select *from student where age >= 30 or no > 6;
+
+//确定某个条件 
+select *from student where name = 'zhangsan' ;
+
+//查处姓张的,%可以匹配一个字符或者多个字符 '_'表示模糊匹配一个字符
+select *from student where name like 'zhang%' ;
+
+//不是有zhang后面有两个字符组成的
+select *from student where name not like 'zhang__';
+
+//删除表中成员
+delete from student where name='zhangsan';
+
+//删除所有姓张的
+delete from student where name like 'zhang%';
+
+//修改记录
+update student set name='bendan' where name='zhangsan';
+
+//同时修改多条记录
+update student set name='test',age=10 where no=5;
+
+//.quit
+
+
