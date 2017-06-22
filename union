@@ -1,0 +1,14 @@
+union U 
+{
+  char a;
+  int b;
+  short c;
+
+};//公用一段存储空间以最大为准
+//使用单块的存储空间，管理不同的数据类型
+int main(void)
+{
+  union A u;
+  printf("sizeof(u) = %d\n",sizeof（u） );
+  return 0；
+}
