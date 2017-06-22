@@ -1,0 +1,11 @@
+1.const int * p = NULL(常量指针)//从右往左读p is a point to int const p 是一个指向整形常量的指针,P的值能变，p的指向可以改变，但是p所指向的地址（*p）不能变
+2.int const * p //*P是个常量所以，
+int * const p = NULL(指针常量)//p不能改变指向，
+3.const int p;//常量整数
+1.举例int const * p
+p = &b
+指针数组：是一个数组，数组中的每一个成员都是指针，int * a[5],a[0]-a[4]每个成员都是int*类型的
+数组指针:是一个指针，指向这种类型的数组，int (*a)[3],数组指针a将来指向，一行有三个成员，每个成员都是int类型的数组。
+函数指针：是一个指针，指向这种类型的函数.
+int (*p) (int a, int b)函数指针将来指向返回值为int，参数为int，int类型的函数，存储函数地址
+指针函数:int *p (int a, int b)返回值为int * ，参数为int int类型的函数
