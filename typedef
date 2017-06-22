@@ -1,0 +1,4 @@
+typedef (int *)     PINT1//别名
+#define PINT2   int *//宏定义
+PINT1 a,b   int *a, int * b;
+PINT2 a,b   int *a, int b;
