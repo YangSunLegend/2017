@@ -1,0 +1,57 @@
+1:用两个栈实现一个队列
+答：栈（satck）实现一个队列
+用c++描述
+已知下面的stack类以及三个方法Push,Pop,Count,请用2个satck实现Queue类的入队(Enqueue)出队的（Queue）方法
+class Stack
+{
+ ...
+ public:
+  void Push(int x);//Push an element out of stack;
+  int Count()const;//Return the number of the elements in stack;
+...
+
+}
+class Queue
+{
+...
+public:
+  void Enueue(int x);
+  int Dequeue();
+  
+private:
+  Stack s1;
+  Stack s2;
+ ...
+}
+思路：
+始终维护s1作为存储空间，以s2作为临时缓存区
+入队时，将元素压入s1
+出队时，s1的元素逐个“倒入”（弹出并压入）s2，将s2的顶元素弹出作为出队元素，
+之后将s2的剩下的元素逐个倒回s1
+栈s1     s2倒入      出队（弹出） 到回  
+入栈压入              S2          s2 
+Xn      X1           X1          X2
+...     X2                       X3     
+X3      X3                       ...
+X2      ...         
+X1      Xn            
+问题1
+如何减少一次压栈操作
+在出队时，在S1栈低1元素不用倒入S2，只需倒入s1.Count（）-1
+这样可以减少一次压栈操作
+2:mysql如何实现分页查询
+(1)使用count（*）的方式
+select count(*) from where b = 1;
+select a from foo where b = 1 limit 100,10;
+（2）调用SQL_CALC_FOUND_ROWS
+select SQL_CALC_FOUND_ROWS a from foo where b = 1 limit 100，,10；
+select found_rows（）；
+
+
+
+
+
+
+
+
+
