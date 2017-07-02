@@ -1,0 +1,78 @@
+sizeof()是算符，strlen()是函数.
+strlen是以'\0'结尾
+1.char str[20] = {0,1,2,3,4,5,6,7,8,9};
+int a = strlen(str)//a = 10；
+int b = sizeof(str)//b = 20;
+2.数组作为参数传给函数时传的是指针而不是数组，传递的是数组的首地址。
+fun(char [8])
+fun(char [])
+等价于fun(char *)
+c++里面参数传递数组永远传递的是指向数组首元素的指针，编译器不知道数组的大小。
+#include <stdio.h>
+int main(void)
+{
+  int a[5] = {0,1,2,3,4};
+  
+    prinf("%d\n",sizeof(a));//20 
+}
+指针可以赋值但是数组名不可以
+sizeof(a)表示整个数组的大小所占的字节数；
+成员个数=sizeof()/sizeof(成员)
+&a[0] 数组首成员的地址
+一维数组的数组名描述的是数组首成员的地址
+ &a数组的地址
+ a数组首成员的地址
+#include <stdio.h>
+
+int main(void)
+ {
+  int a[10] = {0,1,2,3,4,5,6,7,8,9}; 
+  
+  print(a);
+ }
+ void print(int *p,int n)
+ {
+    int i;
+    for(i = 0;i < n; i++)
+    {
+      printf("%d\n",p[i]);
+    }
+ }
+ 1.函数传参时穿的是数组名，根据首成员地址可以找到所有的成员
+ 2.当接收的时候用指针来接收
+ 二维数组
+ a 首行地址
+ *a 首行首成员地址
+ *（a+1）第二行首成员地址
+ *a+1 首行第二个成员地址
+ *（*（a+i）+j）放入嵌套循环
+ atoi字符转化为整形
+ srand（time（null））
+ 例子
+ int a[3][4];
+ sizeof(a) = 48
+ sizeof(a[0][0]) = 4
+ sizeof(a[0])=16
+ a[2][2]
+ *(*(a+2)+2)
+ p[2][2]
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
