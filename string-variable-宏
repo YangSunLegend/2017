@@ -1,0 +1,130 @@
+1.strcpy:字符串复制将字符串2，复制到字符串1
+char c[20] = {"beijing"};
+char d[] = {"shenzhen"};
+strcpy(c,d);
+printf("c = %s\n",c);
+字符数组必须足够大，以容纳复制字符2
+strcpy(str,"china");必须数组名形式
+strcpy(str,str2,2);
+1:void test2()
+　　{
+　　       char string[10], str1[10];
+int i;
+　　for(i=0; i<10;i++)
+　　{
+　　str1[i] ='a';
+　　}
+　　strcpy(string, str1);
+}
+　　这里最大的问题还是str1没有结束符，因为strcpy的第二个参数应该是一个字符串常量。该函数就是通过判断第二个参数的结束符来判断是否拷贝结束的。所以在for循环后面应加上str1p[9] = '/0';
+　　PS：字符数组和字符串的最明显字符串是默认'\0'结束的
+  2:void test3(char* str1)
+　　{
+　　       char string[10];
+　　       if(strlen(str1)<=10)
+　　       {
+　　              strcpy(string, str1);
+　　       }
+　　}
+　　这里的问题仍是越界问题。strlen函数得到字符串的长度，是除结束符之外的。如果str字符串的长度正好等于10的话，就很明显越界了。
+  strcpy的实现
+  会拷贝尾'\0'
+  strcpy(char *to,const char*from)
+  {
+    char * save = to;
+    for(;(*to = *from) != '\0';++from，++to)
+    return(save);
+  }
+  strncpy
+  char *strcnpy(char *s1,const char *s2,size_t n);
+  不能保证尾'\0'
+  strncpy(path,src,sizeof(path)-1);
+  path[sizeof(path)-1] = '\0';
+  len = strlen(path);
+ strlen的实现
+ 1.szie_t strlen_a(const char* str)
+ {
+  size_t length = 0;
+  while(*str++) 
+  ++length;
+  return length;
+ }
+ 2.size_t strlen_b(const char* str)
+ {
+  const char *cp = str;
+  while(*cp++)
+  
+  return(cp - str - 1)
+ }
+ 若要求不能使用variable
+ 只能通过递归来解决
+ int mystrlen(char *str)
+ {
+  if (NULL == str)
+    return 0;
+    if (*str == '\0')
+      return 0;
+  return mystrlen(str+1)+1;
+ }
+2.只有两个数据，写一个交换数据的宏
+1:#define myswap(a,b) a^=b,b^=a,a^=b
+2:#define myswap(a,b) a=a+b,b=a-b,a=a-b
+ ps:^=
+异或 a^=b a=a^b
+两个数的二进制形式，按位对比，相同取0，不同取1.
+3：#define max(x,y) ({typeof(x)temp;temp = x; x = y; y = temp;})
+4：内存拷贝的方法
+#define swap(a,b)
+{
+  int size = sizeof(a);
+  char *temp = (char *)malloc(size);
+  memcpy(temp,&a,size);
+  memecpy(&a,&b,size);
+  memcpy(&b,temp,size);
+  free(temp);
+}
+void *memcpy(void *dest,const void *src,size_t num)
+会复制src所指的内存内容的前num个字节到dest所指的内存地址上
+覆盖原来里面的内容包括'\0'
+
+strcat
+字符串连接
+char * strcat(char * des,char* src)
+des和src所指的内存区域不可以重叠且des必须有足够的空间来容纳src字符串
+char *strcat(char* des,char* src)
+{
+  assert(des && src);
+  
+  char* tempaddr = des;
+  while (*des != '\0')//移动到字符串末尾
+  {
+   ++des;
+  }
+  while('\0' != (*des++ = *src++))
+  {
+  
+  }
+  return temaddr;
+}
+
+strcmp
+int strcmp(const char *s1, const char *s2)
+s1 = s2;返回0
+s1  > s2;返回正数
+s1 < s2;返回负数
+
+#ifndef __FUNC_H
+#define __FUNC_H
+防止被重复引用，避免头文件重复包含
+#endif
+
+
+ 
+ 
+ 
+ 
+  
+  
+  
+  
+  
