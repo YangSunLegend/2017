@@ -1,0 +1,54 @@
+/*
+*The surpose of topic!
+*To achieve judegement that you enter the character is not palindrome?
+*Author:SYY
+*Date:17 Jul 2017
+*/
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+
+#define BUFSIZE	100
+typedef struct Stack {
+	int top;
+   	char str[BUFSIZE];	
+
+}STACK;
+int main()
+{
+	int len,i,mid,next;
+	char str[BUFSIZE];
+	STACK s;
+	s.top = 0;
+	printf("****************Please input character!*********\n");
+	gets(str);
+	len= strlen(str);
+	mid = len/2;
+	
+	for (i=0; i<mid; i++) {
+		s.str[s.top] = str[i];	
+		s.top++;
+	}
+	if(len%2 != 0) {
+		next = mid+1;	
+	}else{
+		next = mid;
+	}
+	while(s.top != 0) {
+		if(s.str[s.top-1] == str[next]) {
+			s.top--;
+			next++;
+		}else{
+			break;
+		}
+
+	}
+		if(s.top == 0){
+			printf("is palindrome!\n");
+		}else{
+			printf("is not palindrome!\n");
+		}
+	return 0;
+}
+
+
