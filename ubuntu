@@ -1,0 +1,10 @@
+1.搭建文件系统 ubuntu for AM5728
+The main reference is https://gnu-linux.org/building-ubuntu-rootfs-for-arm.html 
+But there has some notes：
+
+1)the last ttyS0 must be ttyS2 for TI AM572x
+
+2)"sudo start ttyS2" is added to ubuntu-rootfs/etc/rc.local
+
+2.The config files need maybe only the .../ti-processor-sdk-linux-rt-am57xx-evm-04.00.00.04/targetNFS/boot/(all files)
+which copied to ubuntu-rootfs/boot.
